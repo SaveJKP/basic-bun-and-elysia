@@ -1,6 +1,51 @@
 import { Elysia } from "elysia";
-
+import { cors } from "@elysiajs/cors";
+import { staticPlugin } from "@elysiajs/static";
+import { swagger } from "@elysiajs/swagger";
+import { jwt } from "@elysiajs/jwt";
+import customerController from "./controllers/customer-controller";
 const app = new Elysia()
+  .use(cors())
+  .use(staticPlugin())
+  .use(swagger())
+  .use(
+    jwt({
+      name: "jwt",
+      secret: "secret",
+    })
+  )
+  .get("/customers", customerController.list)
+  .post("/customers", customerController.create)
+  .put("/customers/:id", customerController.update)
+  .delete("/customers/:id", customerController.remove)
+
+  .post("/login", async ({ jwt, cookie: { auth } }) => {
+    const user = {
+      id: 1,
+      name: "John",
+      username: "john",
+      level: "admin",
+    };
+    const token = await jwt.sign(user);
+    auth.set({
+      value: token,
+      httpOnly: true,
+      secure: true,
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/profile",
+    });
+    return { token: token };
+  })
+  //get profile
+  .get("/profile", ({ jwt, cookie: { auth } }) => {
+    const user = jwt.verify(auth.value);
+    return user;
+  })
+  //get log out
+  .get("/logout", ({ cookie: { auth } }) => {
+    auth.remove();
+    return { message: "Logged out" };
+  })
   // แบบที่ 1: Nested Destructuring (ที่ใช้ในโค้ด)
   .get("/customers/:id", ({ params: { id } }) => {
     return `Got id: ${id}`;
@@ -83,6 +128,24 @@ const app = new Elysia()
   )
   .delete("/customers/delete/:id", ({ params: { id } }) => {
     return `Got id: ${id}`;
+  })
+
+  //upload file
+  .post("/upload-file", ({ body: { file } }: { body: { file: File } }) => {
+    Bun.write("uploads/" + file.name, file);
+    return { message: "File uploaded" };
+  })
+
+  //write file
+  .get("/write-file", () => {
+    Bun.write("test.txt", "Hello World");
+    return { message: "File written" };
+  })
+
+  //read file
+  .get("/read-file", () => {
+    const file = Bun.file("test.txt");
+    return file.text();
   })
   .listen(3000);
 
