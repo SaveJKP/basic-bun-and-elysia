@@ -3,7 +3,10 @@ import { cors } from "@elysiajs/cors";
 import { staticPlugin } from "@elysiajs/static";
 import { swagger } from "@elysiajs/swagger";
 import { jwt } from "@elysiajs/jwt";
-import customerController from "./controllers/customer-controller";
+
+import CustomerController from "./controllers/customer-controller";
+import { UserController } from "./controllers/user-controller";
+
 const app = new Elysia()
   .use(cors())
   .use(staticPlugin())
@@ -14,10 +17,18 @@ const app = new Elysia()
       secret: "secret",
     })
   )
-  .get("/customers", customerController.list)
-  .post("/customers", customerController.create)
-  .put("/customers/:id", customerController.update)
-  .delete("/customers/:id", customerController.remove)
+  //basic query
+  .group("/customers", (app) =>
+    app
+      .get("", CustomerController.list)
+      .post("", CustomerController.create)
+      .put("/:id", CustomerController.update)
+      .delete("/:id", CustomerController.remove)
+  )
+
+  .group("/users", (app) =>
+    app.get("", UserController.list).post("", UserController.create)
+  )
 
   .post("/login", async ({ jwt, cookie: { auth } }) => {
     const user = {
@@ -36,6 +47,7 @@ const app = new Elysia()
     });
     return { token: token };
   })
+
   //get profile
   .get("/profile", ({ jwt, cookie: { auth } }) => {
     const user = jwt.verify(auth.value);
@@ -45,6 +57,25 @@ const app = new Elysia()
   .get("/logout", ({ cookie: { auth } }) => {
     auth.remove();
     return { message: "Logged out" };
+  })
+  //get info
+  .get("/info", async ({ jwt, request }) => {
+    if (request.headers.get("Authorization") === null) {
+      return { message: "No Authorization header" };
+    }
+
+    const token = request.headers.get("Authorization") ?? "";
+
+    if (token === "") {
+      return { message: "No token" };
+    }
+
+    const payload = await jwt.verify(token);
+
+    return {
+      message: "Hello Elysia",
+      payload: payload,
+    };
   })
   // แบบที่ 1: Nested Destructuring (ที่ใช้ในโค้ด)
   .get("/customers/:id", ({ params: { id } }) => {
