@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 
 export const UserController = {
@@ -156,5 +155,90 @@ export const UserController = {
         },
       },
     });
+  },
+  count: async () => {
+    try {
+      const totalRows = await prisma.user.count();
+
+      return { totalRows };
+    } catch (error) {
+      return error;
+    }
+  },
+  sum: async () => {
+    try {
+      const result = await prisma.user.aggregate({
+        _sum: {
+          credit: true,
+        },
+      });
+
+      return { sum: result._sum.credit };
+    } catch (error) {
+      return error;
+    }
+  },
+  max: async () => {
+    try {
+      const result = await prisma.user.aggregate({
+        _max: {
+          credit: true,
+        },
+      });
+
+      return { max: result._max.credit };
+    } catch (error) {
+      return error;
+    }
+  },
+  min: async () => {
+    return await prisma.user.aggregate({
+      _min: {
+        credit: true,
+      },
+    });
+  },
+  avg: async () => {
+    return await prisma.user.aggregate({
+      _avg: {
+        credit: true,
+      },
+    });
+  },
+  // ฟังก์ชันเพื่อดึงข้อมูล Users และ Department
+  usersAndDepartment: async () => {
+    try {
+      const users = await prisma.user.findMany({
+        include: {
+          department: true, // ใช้ `include` เพื่อดึงข้อมูลที่เกี่ยวข้อง
+        },
+      });
+
+      return users; // ส่งกลับข้อมูล Users พร้อมข้อมูล Department
+    } catch (err) {
+      console.error("Error fetching users and departments:", err); // แสดงข้อผิดพลาดหากมี
+      return { error: "Error fetching users and departments" };
+    }
+  },
+  signIn: async ({
+    body,
+  }: {
+    body: {
+      email: string;
+      password: string;
+    };
+  }) => {
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          email: body.email,
+          password: body.password,
+        },
+      });
+
+      return { user: user };
+    } catch (err) {
+      return err;
+    }
   },
 };

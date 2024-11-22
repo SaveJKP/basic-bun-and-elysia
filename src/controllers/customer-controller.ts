@@ -1,4 +1,7 @@
-export default {
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+
+export const CustomerController = {
   list: () => {
     const customers = [
       { id: 1, name: "John Doe", email: "john@doe.com" },

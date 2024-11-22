@@ -4,13 +4,23 @@ import { staticPlugin } from "@elysiajs/static";
 import { swagger } from "@elysiajs/swagger";
 import { jwt } from "@elysiajs/jwt";
 
-import CustomerController from "./controllers/customer-controller";
+import { CustomerController } from "./controllers/customer-controller";
 import { UserController } from "./controllers/user-controller";
-
+import { DepartmentController } from "./controllers/department-controller";
 const app = new Elysia()
   .use(cors())
   .use(staticPlugin())
-  .use(swagger())
+  .use(
+    swagger({
+      documentation: {
+        tags: [
+          { name: "User", description: "User related endpoints" },
+          { name: "Customer", description: "Customer related endpoints" },
+          { name: "Department", description: "Department related endpoints" },
+        ],
+      },
+    })
+  )
   .use(
     jwt({
       name: "jwt",
@@ -18,7 +28,7 @@ const app = new Elysia()
     })
   )
   //basic query
-  .group("/customers", (app) =>
+  .group("/customers", { tags: ["Customer"] }, (app) =>
     app
       .get("", CustomerController.list)
       .post("", CustomerController.create)
@@ -26,8 +36,42 @@ const app = new Elysia()
       .delete("/:id", CustomerController.remove)
   )
 
-  .group("/users", (app) =>
-    app.get("", UserController.list).post("", UserController.create)
+  .group("/users", { tags: ["User"] }, (app) =>
+    app
+      .get("", UserController.list)
+      .post("", UserController.create)
+      .put("/:id", UserController.update)
+      .delete("/:id", UserController.remove)
+      .get("/some-field", UserController.findSomeField)
+      .get("/sort", UserController.sort)
+      .get("/filter", UserController.filter)
+      .get("/more-than", UserController.moreThan)
+      .get("/less-than", UserController.lessThan)
+      .get("/not-equal", UserController.notEqual)
+      .get("/in", UserController.in)
+      .get("/is-null", UserController.isNull)
+      .get("/is-not-null", UserController.isNotNull)
+      .get("/between", UserController.between)
+      .get("/count", UserController.count)
+      .get("/sum", UserController.sum)
+      .get("/max", UserController.max)
+      .get("/min", UserController.min)
+      .get("/avg", UserController.avg)
+      .get("/users-and-department", UserController.usersAndDepartment)
+      .post("/sign-in", UserController.signIn)
+  )
+  .group("/departments", { tags: ["Department"] }, (app) =>
+    app
+      .get("/", DepartmentController.list)
+      .get("/usersInDepartment/:id", DepartmentController.usersInDepartment)
+      .post(
+        "/create-department-and-users",
+        DepartmentController.createDepartmentAndUsers
+      )
+      .get(
+        "/count-users-in-department",
+        DepartmentController.countUsersInDepartment
+      )
   )
 
   .post("/login", async ({ jwt, cookie: { auth } }) => {
