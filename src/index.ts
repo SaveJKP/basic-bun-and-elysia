@@ -7,6 +7,22 @@ import { jwt } from "@elysiajs/jwt";
 import { CustomerController } from "./controllers/customer-controller";
 import { UserController } from "./controllers/user-controller";
 import { DepartmentController } from "./controllers/department-controller";
+
+const checkSignin = async ({jwt, request, set}: any) => {
+  const token = request.headers.get("Authorization");
+   if (!token) {
+    set.status = 401;
+    return 'Unauthorized';
+  }
+
+  const payload = await jwt.verify(token);
+
+  if (!payload) {
+    set.status = 401;
+    return 'Unauthorized';
+  }
+}
+
 const app = new Elysia()
   .use(cors())
   .use(staticPlugin())
@@ -59,6 +75,7 @@ const app = new Elysia()
       .get("/avg", UserController.avg)
       .get("/users-and-department", UserController.usersAndDepartment)
       .post("/sign-in", UserController.signIn)
+      .get("/info", UserController.info, {beforeHandle:checkSignin})
   )
   .group("/departments", { tags: ["Department"] }, (app) =>
     app

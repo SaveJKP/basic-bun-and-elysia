@@ -222,23 +222,39 @@ export const UserController = {
   },
   signIn: async ({
     body,
+    jwt,
   }: {
     body: {
       email: string;
       password: string;
     };
+    jwt: any;
   }) => {
     try {
       const user = await prisma.user.findFirst({
+        select: {
+          id: true,
+          email: true,
+          level: true,
+        },
         where: {
           email: body.email,
           password: body.password,
         },
       });
 
-      return { user: user };
+      if (!user) {
+        return { message: "User not found" };
+      }
+      const token = await jwt.sign(user);
+      return { user: user, token: token };
     } catch (err) {
       return err;
     }
+  },
+  info: async ({ jwt, request }: { jwt: any; request: Request }) => {
+    const token = request.headers.get("Authorization") ?? "";
+    const payload = await jwt.verify(token);
+    return { payload: payload };
   },
 };
